@@ -44,6 +44,14 @@ Thumbs.db
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
 
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Attached assets (binary/media uploads)
+attached_assets/
+
 # Replit
 .cache/
 .local/
