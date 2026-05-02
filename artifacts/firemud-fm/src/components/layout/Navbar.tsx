@@ -1,4 +1,3 @@
-import React from "react";
 import { Link, useLocation } from "wouter";
 import { Search, Heart, Radio, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";

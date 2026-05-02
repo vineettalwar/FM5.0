@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePlayer } from "@/contexts/PlayerContext";
 import { Slider } from "@/components/ui/slider";
 import { Play, Pause, Heart, Volume2, VolumeX, Loader2 } from "lucide-react";
