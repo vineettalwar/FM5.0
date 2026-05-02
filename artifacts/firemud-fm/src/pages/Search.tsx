@@ -5,7 +5,8 @@ import {
   useGetGenres,
   getGetGenresQueryKey,
   useGetCountries,
-  getGetCountriesQueryKey
+  getGetCountriesQueryKey,
+  SearchStationsOrder
 } from "@workspace/api-client-react";
 import { StationGrid } from "@/components/station/StationGrid";
 import { Input } from "@/components/ui/input";
@@ -27,13 +28,13 @@ export default function Search() {
   
   const [genre, setGenre] = useState<string>("all");
   const [country, setCountry] = useState<string>("all");
-  const [order, setOrder] = useState<string>("clickcount");
+  const [order, setOrder] = useState<SearchStationsOrder>(SearchStationsOrder.clickcount);
   
   const searchParams = {
     query: debouncedQuery || undefined,
     genre: genre !== "all" ? genre : undefined,
     country: country !== "all" ? country : undefined,
-    order: order as any,
+    order,
     limit: 24
   };
 
@@ -49,7 +50,7 @@ export default function Search() {
     setQuery("");
     setGenre("all");
     setCountry("all");
-    setOrder("clickcount");
+    setOrder(SearchStationsOrder.clickcount);
   };
 
   return (
@@ -113,19 +114,19 @@ export default function Search() {
               </SelectContent>
             </Select>
 
-            <Select value={order} onValueChange={setOrder}>
+            <Select value={order} onValueChange={(v) => setOrder(v as SearchStationsOrder)}>
               <SelectTrigger className="w-full md:w-[200px] h-12 bg-black/20 border-white/5 rounded-xl">
                 <SelectValue placeholder="Sort By" />
               </SelectTrigger>
               <SelectContent className="bg-card/95 backdrop-blur-xl border-white/10">
-                <SelectItem value="clickcount">Most Popular</SelectItem>
-                <SelectItem value="votes">Highest Rated</SelectItem>
-                <SelectItem value="bitrate">Audio Quality</SelectItem>
-                <SelectItem value="name">Name</SelectItem>
+                <SelectItem value={SearchStationsOrder.clickcount}>Most Popular</SelectItem>
+                <SelectItem value={SearchStationsOrder.votes}>Highest Rated</SelectItem>
+                <SelectItem value={SearchStationsOrder.bitrate}>Audio Quality</SelectItem>
+                <SelectItem value={SearchStationsOrder.name}>Name</SelectItem>
               </SelectContent>
             </Select>
 
-            {(query || genre !== "all" || country !== "all" || order !== "clickcount") && (
+            {(query || genre !== "all" || country !== "all" || order !== SearchStationsOrder.clickcount) && (
               <Button variant="ghost" className="text-white/60 hover:text-white" onClick={clearFilters}>
                 Clear Filters
               </Button>

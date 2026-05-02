@@ -116,7 +116,19 @@ export default function Home() {
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold tracking-tight font-serif">Editor's Picks</h2>
           </div>
-          <StationGrid stations={featuredRes?.stations?.slice(1)} isLoading={featuredLoading} />
+          <ScrollRow>
+            {featuredLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="shrink-0 w-[160px] md:w-[200px] aspect-[3/4] rounded-2xl bg-card animate-pulse" />
+              ))
+            ) : (
+              featuredRes?.stations?.slice(1).map(station => (
+                <div key={station.stationuuid} className="shrink-0 w-[160px] md:w-[200px]">
+                  <StationCard station={station} />
+                </div>
+              ))
+            )}
+          </ScrollRow>
         </section>
 
       </div>

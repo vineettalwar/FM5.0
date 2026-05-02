@@ -45,7 +45,7 @@ export function Navbar({ onSearchOpen }: { onSearchOpen?: () => void }) {
 
         <div className="flex items-center gap-2">
           {onSearchOpen && (
-            <Button variant="ghost" size="icon" onClick={onSearchOpen} className="text-white/60 hover:text-white hover:bg-white/10 rounded-full hidden md:flex">
+            <Button variant="ghost" size="icon" onClick={onSearchOpen} className="text-white/60 hover:text-white hover:bg-white/10 rounded-full flex">
               <Search className="h-5 w-5" />
             </Button>
           )}
