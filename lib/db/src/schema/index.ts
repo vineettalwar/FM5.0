@@ -19,7 +19,7 @@ export const stationsCacheTable = pgTable("stations_cache", {
   url_resolved: text("url_resolved"),
   homepage: text("homepage"),
   favicon: text("favicon"),
-  tags: text("tags"), // comma-separated from API
+  tags: text("tags").array(), // array of genre tags
   country: text("country"),
   countrycode: text("countrycode"),
   state: text("state"),
@@ -47,7 +47,7 @@ export type StationCache = typeof stationsCacheTable.$inferSelect;
 // ─── genres_cache ─────────────────────────────────────────────────────────────
 export const genresCacheTable = pgTable("genres_cache", {
   name: text("name").primaryKey(),
-  stationcount: integer("stationcount").notNull(),
+  station_count: integer("station_count").notNull(),
   cached_at: timestamp("cached_at").defaultNow().notNull(),
 });
 
@@ -57,7 +57,7 @@ export type GenreCache = typeof genresCacheTable.$inferSelect;
 export const countriesCacheTable = pgTable("countries_cache", {
   name: text("name").primaryKey(),
   iso_3166_1: text("iso_3166_1"),
-  stationcount: integer("stationcount").notNull(),
+  station_count: integer("station_count").notNull(),
   cached_at: timestamp("cached_at").defaultNow().notNull(),
 });
 
