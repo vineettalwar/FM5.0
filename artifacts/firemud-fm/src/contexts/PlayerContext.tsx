@@ -7,9 +7,12 @@ interface PlayerContextType {
   isPlaying: boolean;
   volume: number;
   isLoading: boolean;
+  isExpanded: boolean;
+  ambientColor: string;
   playStation: (station: Station) => void;
   togglePlayPause: () => void;
   setVolume: (volume: number) => void;
+  setIsExpanded: (v: boolean) => void;
 }
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
@@ -19,6 +22,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolumeState] = useState(0.8);
   const [isLoading, setIsLoading] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [ambientColor, setAmbientColor] = useState("22 95% 53%");
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
   const reportClick = useReportStationClick();
@@ -34,7 +39,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const handleError = () => {
       setIsLoading(false);
       setIsPlaying(false);
-      // fallback or error toast here
     };
 
     audioRef.current.addEventListener("playing", handlePlaying);
@@ -56,6 +60,51 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!currentStation?.favicon) {
+      setAmbientColor("22 95% 53%");
+      return;
+    }
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = currentStation.favicon;
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = 1;
+        canvas.height = 1;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, 1, 1);
+          const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+          // Simple RGB to HSL approximation for primary colors
+          const max = Math.max(r, g, b) / 255;
+          const min = Math.min(r, g, b) / 255;
+          let h = 0, s = 0, l = (max + min) / 2;
+
+          if (max !== min) {
+            const d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            switch (max) {
+              case r / 255: h = (g / 255 - b / 255) / d + (g < b ? 6 : 0); break;
+              case g / 255: h = (b / 255 - r / 255) / d + 2; break;
+              case b / 255: h = (r / 255 - g / 255) / d + 4; break;
+            }
+            h /= 6;
+          }
+          setAmbientColor(`${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`);
+        }
+      } catch (e) {
+        setAmbientColor("22 95% 53%");
+      }
+    };
+    img.onerror = () => setAmbientColor("22 95% 53%");
+  }, [currentStation]);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--ambient', ambientColor);
+  }, [ambientColor]);
+
   const setVolume = (newVolume: number) => {
     setVolumeState(newVolume);
     if (audioRef.current) {
@@ -66,11 +115,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const playStation = async (station: Station) => {
     if (!audioRef.current || !station.url_resolved) return;
     
-    // Report click
     reportClick.mutate({ uuid: station.stationuuid });
     
     if (currentStation?.stationuuid === station.stationuuid) {
-      // Toggle play pause if it's the same station
       togglePlayPause();
       return;
     }
@@ -107,9 +154,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         isPlaying,
         volume,
         isLoading,
+        isExpanded,
+        ambientColor,
         playStation,
         togglePlayPause,
-        setVolume
+        setVolume,
+        setIsExpanded
       }}
     >
       {children}

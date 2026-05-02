@@ -4,6 +4,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PlayerProvider } from "@/contexts/PlayerContext";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { NowPlayingScreen } from "@/components/layout/NowPlayingScreen";
+import { useEffect } from "react";
 
 import Home from "@/pages/Home";
 import Search from "@/pages/Search";
@@ -28,10 +30,15 @@ function Router() {
 }
 
 function App() {
+  useEffect(() => {
+    document.documentElement.classList.add("dark");
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <PlayerProvider>
+          <NowPlayingScreen />
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
             <AppLayout>
               <Router />
