@@ -22,7 +22,7 @@ export function NowPlayingScreen() {
 
   const { data: favoritesRes } = useGetFavorites({ query: { queryKey: getGetFavoritesQueryKey() } });
   const isFavorite = currentStation ? (favoritesRes?.stations?.some(s => s.stationuuid === currentStation.stationuuid) || false) : false;
-  
+
   const addFavorite = useAddFavorite();
   const removeFavorite = useRemoveFavorite();
 
@@ -45,33 +45,35 @@ export function NowPlayingScreen() {
     }
   };
 
-  const onPointerDown = (e: React.PointerEvent) => {
+  // Drag handlers scoped to the drag handle strip only
+  const onHandlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
     dragStartY.current = e.clientY;
     dragStartTime.current = Date.now();
     isDragging.current = true;
     setDragY(0);
   };
 
-  const onPointerMove = (e: React.PointerEvent) => {
+  const onHandlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDragging.current || dragStartY.current === null) return;
     const delta = e.clientY - dragStartY.current;
     if (delta > 0) setDragY(delta);
   };
 
-  const onPointerUp = (e: React.PointerEvent) => {
+  const onHandlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDragging.current || dragStartY.current === null || dragStartTime.current === null) return;
     const delta = e.clientY - dragStartY.current;
-    const elapsed = Date.now() - dragStartTime.current;
+    const elapsed = Math.max(1, Date.now() - dragStartTime.current);
     const velocity = delta / elapsed;
     isDragging.current = false;
+    dragStartY.current = null;
+    dragStartTime.current = null;
     if (delta > SWIPE_THRESHOLD || velocity > VELOCITY_THRESHOLD) {
       setDragY(0);
       setIsExpanded(false);
     } else {
       setDragY(0);
     }
-    dragStartY.current = null;
-    dragStartTime.current = null;
   };
 
   if (!currentStation) return null;
@@ -85,12 +87,8 @@ export function NowPlayingScreen() {
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex flex-col bg-black/90 backdrop-blur-3xl overflow-hidden touch-none"
+      className="fixed inset-0 z-[60] flex flex-col bg-black/90 backdrop-blur-3xl overflow-hidden"
       style={transitionStyle}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
     >
       {/* Blurred background */}
       {currentStation.favicon && (
@@ -103,11 +101,18 @@ export function NowPlayingScreen() {
       )}
       <div className="absolute inset-0 bg-black/60 pointer-events-none" />
 
-      {/* Top Bar — drag handle + close button */}
+      {/* Top Bar — drag handle handles swipe-down */}
       <div className="relative z-10 flex flex-col items-center pt-4 pb-2 px-4 shrink-0">
+        {/* Drag handle strip — only this area initiates swipe-down */}
         <div
-          className="w-12 h-1.5 bg-white/20 rounded-full mb-4 cursor-grab active:cursor-grabbing"
-        />
+          className="w-full flex justify-center pb-4 cursor-grab active:cursor-grabbing touch-pan-y"
+          onPointerDown={onHandlePointerDown}
+          onPointerMove={onHandlePointerMove}
+          onPointerUp={onHandlePointerUp}
+          onPointerCancel={onHandlePointerUp}
+        >
+          <div className="w-12 h-1.5 bg-white/20 rounded-full" />
+        </div>
         <div className="w-full flex justify-between items-center">
           <Button
             variant="ghost"
@@ -122,9 +127,9 @@ export function NowPlayingScreen() {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Scrollable Main Content — native scroll works here, no touch-none */}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 sm:p-12 min-h-0 overflow-y-auto scrollbar-none pb-24">
-        
+
         {/* Artwork */}
         <div className="relative mb-10 shrink-0 w-64 h-64 sm:w-80 sm:h-80">
           <div
@@ -177,7 +182,7 @@ export function NowPlayingScreen() {
             >
               <Heart className={cn("h-6 w-6", isFavorite && "fill-primary text-primary")} />
             </Button>
-            
+
             <Button
               size="icon"
               className="h-20 w-20 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_30px_rgba(var(--primary),0.3)] transition-transform hover:scale-105"
@@ -191,7 +196,7 @@ export function NowPlayingScreen() {
                 <Play className="h-8 w-8 ml-1.5" />
               )}
             </Button>
-            
+
             <div className="w-12 h-12" />
           </div>
 
