@@ -114,7 +114,11 @@ export default function Search() {
               </SelectContent>
             </Select>
 
-            <Select value={order} onValueChange={(v) => setOrder(v as SearchStationsOrder)}>
+            <Select value={order} onValueChange={(v) => {
+              if ((Object.values(SearchStationsOrder) as string[]).includes(v)) {
+                setOrder(v as SearchStationsOrder);
+              }
+            }}>
               <SelectTrigger className="w-full md:w-[200px] h-12 bg-black/20 border-white/5 rounded-xl">
                 <SelectValue placeholder="Sort By" />
               </SelectTrigger>
