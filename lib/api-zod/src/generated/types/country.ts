@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface Country {
+  name: string;
+  iso_3166_1?: string;
+  stationcount: number;
 }

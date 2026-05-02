@@ -3,13 +3,24 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: FireMud FM Radio Portal API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: stations
+    description: Radio station operations
+  - name: genres
+    description: Genre operations
+  - name: countries
+    description: Country operations
+  - name: favorites
+    description: Favorites management
+  - name: history
+    description: Listening history
+
 paths:
   /healthz:
     get:
@@ -24,6 +35,317 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /stations/search:
+    get:
+      operationId: searchStations
+      tags: [stations]
+      summary: Search radio stations
+      description: Search stations by name, genre, or country. Results are cached locally.
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+          description: Search term for station name
+        - name: genre
+          in: query
+          schema:
+            type: string
+          description: Filter by genre/tag
+        - name: country
+          in: query
+          schema:
+            type: string
+          description: Filter by country code (ISO 3166-1)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 24
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [name, votes, clickcount, bitrate, random]
+            default: votes
+      responses:
+        "200":
+          description: List of matching stations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StationListResponse"
+
+  /stations/trending:
+    get:
+      operationId: getTrendingStations
+      tags: [stations]
+      summary: Get trending stations
+      description: Returns top stations by recent click count
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 50
+      responses:
+        "200":
+          description: Trending stations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StationListResponse"
+
+  /stations/featured:
+    get:
+      operationId: getFeaturedStations
+      tags: [stations]
+      summary: Get featured/curated stations
+      description: Returns editorially curated station selections
+      responses:
+        "200":
+          description: Featured stations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StationListResponse"
+
+  /stations/by-genre/{genre}:
+    get:
+      operationId: getStationsByGenre
+      tags: [stations]
+      summary: Get stations by genre
+      parameters:
+        - name: genre
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 24
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        "200":
+          description: Stations for the specified genre
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StationListResponse"
+
+  /stations/by-country/{countrycode}:
+    get:
+      operationId: getStationsByCountry
+      tags: [stations]
+      summary: Get stations by country
+      parameters:
+        - name: countrycode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 24
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        "200":
+          description: Stations for the specified country
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StationListResponse"
+
+  /stations/{uuid}:
+    get:
+      operationId: getStationByUuid
+      tags: [stations]
+      summary: Get station by UUID
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Station detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Station"
+        "404":
+          description: Station not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /stations/{uuid}/click:
+    post:
+      operationId: reportStationClick
+      tags: [stations]
+      summary: Report a station click/listen event
+      description: Forwards click to Radio Browser API and logs local listening history
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Click reported successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClickResponse"
+
+  /genres:
+    get:
+      operationId: getGenres
+      tags: [genres]
+      summary: Get all genres
+      description: Returns all genres sorted by station count (cached 24h)
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 200
+      responses:
+        "200":
+          description: List of genres
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenreListResponse"
+
+  /countries:
+    get:
+      operationId: getCountries
+      tags: [countries]
+      summary: Get all countries
+      description: Returns all countries with radio stations sorted by station count (cached 24h)
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 300
+      responses:
+        "200":
+          description: List of countries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountryListResponse"
+
+  /favorites:
+    get:
+      operationId: getFavorites
+      tags: [favorites]
+      summary: Get favorite stations
+      description: Returns all favorited stations for the current session
+      responses:
+        "200":
+          description: List of favorite stations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StationListResponse"
+    post:
+      operationId: addFavorite
+      tags: [favorites]
+      summary: Add a station to favorites
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddFavoriteRequest"
+      responses:
+        "200":
+          description: Station added to favorites
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FavoriteResponse"
+
+  /favorites/{stationUuid}:
+    delete:
+      operationId: removeFavorite
+      tags: [favorites]
+      summary: Remove a station from favorites
+      parameters:
+        - name: stationUuid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Station removed from favorites
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FavoriteResponse"
+
+  /history:
+    get:
+      operationId: getListeningHistory
+      tags: [history]
+      summary: Get listening history
+      description: Returns recently listened stations for the current session
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 50
+      responses:
+        "200":
+          description: Listening history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StationListResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +356,155 @@ components:
       required:
         - status
 
+    Station:
+      type: object
+      properties:
+        stationuuid:
+          type: string
+        name:
+          type: string
+        url_resolved:
+          type: string
+          description: The live, current stream URL — always use this for playback
+        url:
+          type: string
+        homepage:
+          type: string
+        favicon:
+          type: string
+        tags:
+          type: string
+          description: Comma-separated genre tags
+        country:
+          type: string
+        countrycode:
+          type: string
+        state:
+          type: string
+        language:
+          type: string
+        codec:
+          type: string
+        bitrate:
+          type: integer
+        hls:
+          type: integer
+        lastcheckok:
+          type: boolean
+        votes:
+          type: integer
+        clickcount:
+          type: integer
+        clicktrend:
+          type: integer
+        geo_lat:
+          type: string
+        geo_long:
+          type: string
+      required:
+        - stationuuid
+        - name
+
+    StationListResponse:
+      type: object
+      properties:
+        stations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Station"
+        total:
+          type: integer
+        offset:
+          type: integer
+        limit:
+          type: integer
+      required:
+        - stations
+        - total
+        - offset
+        - limit
+
+    Genre:
+      type: object
+      properties:
+        name:
+          type: string
+        stationcount:
+          type: integer
+      required:
+        - name
+        - stationcount
+
+    GenreListResponse:
+      type: object
+      properties:
+        genres:
+          type: array
+          items:
+            $ref: "#/components/schemas/Genre"
+      required:
+        - genres
+
+    Country:
+      type: object
+      properties:
+        name:
+          type: string
+        iso_3166_1:
+          type: string
+        stationcount:
+          type: integer
+      required:
+        - name
+        - stationcount
+
+    CountryListResponse:
+      type: object
+      properties:
+        countries:
+          type: array
+          items:
+            $ref: "#/components/schemas/Country"
+      required:
+        - countries
+
+    AddFavoriteRequest:
+      type: object
+      properties:
+        stationUuid:
+          type: string
+      required:
+        - stationUuid
+
+    FavoriteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        stationUuid:
+          type: string
+      required:
+        - success
+        - stationUuid
+
+    ClickResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+      required:
+        - ok
+        - message
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message

@@ -5,7 +5,8 @@
  * FireMud FM Radio Portal API
  * OpenAPI spec version: 0.1.0
  */
+import type { Genre } from "./genre";
 
-export interface HealthStatus {
-  status: string;
+export interface GenreListResponse {
+  genres: Genre[];
 }
