@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "FireMud FM"
+version = "1.0.0"
+id = "artifacts/firemud-fm"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25339
+
+[services.development]
+run = "pnpm --filter @workspace/firemud-fm run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/firemud-fm", "run", "build" ]
+publicDir = "artifacts/firemud-fm/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25339"
+BASE_PATH = "/"
