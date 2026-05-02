@@ -7,10 +7,18 @@ import {
   type GenreCache,
   type CountryCache,
 } from "@workspace/db";
-import { eq, lt, inArray, sql } from "drizzle-orm";
+import { eq, lt, sql } from "drizzle-orm";
 import { radioBrowser, type RBStation, type SearchParams } from "./radio-browser.js";
 
-const STATION_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+// TTLs — station TTL is configurable via env var; genre/country TTL is a hardcoded default
+// that the scheduler can override via the forceRefresh flag.
+function parseStationTtlHours(): number {
+  const raw = Number(process.env["SYNC_STATION_TTL_HOURS"] ?? 6);
+  if (!Number.isFinite(raw) || raw < 1 || raw > 168) return 6;
+  return Math.floor(raw);
+}
+export const STATION_TTL_MS = parseStationTtlHours() * 60 * 60 * 1000;
+
 const GENRE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const COUNTRY_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -133,21 +141,26 @@ export async function getTrendingStationsCached(limit = 20): Promise<StationCach
   return upsertStations(rbResults);
 }
 
-export async function getGenresCached(limit = 200): Promise<GenreCache[]> {
-  // Check if we have fresh data
-  const existing = await db
-    .select()
-    .from(genresCacheTable)
-    .limit(1);
-  
-  if (existing.length) {
-    const ageMs = Date.now() - existing[0].cached_at.getTime();
-    if (ageMs < GENRE_TTL_MS) {
-      return db
-        .select()
-        .from(genresCacheTable)
-        .orderBy(sql`${genresCacheTable.station_count} DESC`)
-        .limit(limit);
+export async function getGenresCached(
+  limit = 200,
+  forceRefresh = false,
+): Promise<GenreCache[]> {
+  // Check if we have fresh data (skip check when forcing a refresh)
+  if (!forceRefresh) {
+    const existing = await db
+      .select()
+      .from(genresCacheTable)
+      .limit(1);
+
+    if (existing.length) {
+      const ageMs = Date.now() - existing[0].cached_at.getTime();
+      if (ageMs < GENRE_TTL_MS) {
+        return db
+          .select()
+          .from(genresCacheTable)
+          .orderBy(sql`${genresCacheTable.station_count} DESC`)
+          .limit(limit);
+      }
     }
   }
 
@@ -166,20 +179,25 @@ export async function getGenresCached(limit = 200): Promise<GenreCache[]> {
     .limit(limit);
 }
 
-export async function getCountriesCached(limit = 300): Promise<CountryCache[]> {
-  const existing = await db
-    .select()
-    .from(countriesCacheTable)
-    .limit(1);
-  
-  if (existing.length) {
-    const ageMs = Date.now() - existing[0].cached_at.getTime();
-    if (ageMs < COUNTRY_TTL_MS) {
-      return db
-        .select()
-        .from(countriesCacheTable)
-        .orderBy(sql`${countriesCacheTable.station_count} DESC`)
-        .limit(limit);
+export async function getCountriesCached(
+  limit = 300,
+  forceRefresh = false,
+): Promise<CountryCache[]> {
+  if (!forceRefresh) {
+    const existing = await db
+      .select()
+      .from(countriesCacheTable)
+      .limit(1);
+
+    if (existing.length) {
+      const ageMs = Date.now() - existing[0].cached_at.getTime();
+      if (ageMs < COUNTRY_TTL_MS) {
+        return db
+          .select()
+          .from(countriesCacheTable)
+          .orderBy(sql`${countriesCacheTable.station_count} DESC`)
+          .limit(limit);
+      }
     }
   }
 

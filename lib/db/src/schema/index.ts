@@ -6,6 +6,7 @@ import {
   boolean,
   timestamp,
   pgEnum,
+  real,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -113,3 +114,42 @@ export const insertCuratedSchema = createInsertSchema(
 ).omit({ id: true, added_at: true });
 export type InsertCurated = z.infer<typeof insertCuratedSchema>;
 export type CuratedStation = typeof curatedStationsTable.$inferSelect;
+
+// ─── broken_reports ───────────────────────────────────────────────────────────
+export const brokenReasonEnum = pgEnum("broken_reason", [
+  "stream_dead",
+  "wrong_content",
+  "poor_quality",
+  "other",
+]);
+
+export const brokenReportsTable = pgTable("broken_reports", {
+  id: serial("id").primaryKey(),
+  station_uuid: text("station_uuid").notNull(),
+  session_id: text("session_id").notNull(),
+  reason: brokenReasonEnum("reason").notNull().default("other"),
+  reported_at: timestamp("reported_at").defaultNow().notNull(),
+});
+
+export const insertBrokenReportSchema = createInsertSchema(
+  brokenReportsTable,
+).omit({ id: true, reported_at: true });
+export type InsertBrokenReport = z.infer<typeof insertBrokenReportSchema>;
+export type BrokenReport = typeof brokenReportsTable.$inferSelect;
+
+// ─── ai_recommendations ───────────────────────────────────────────────────────
+export const aiRecommendationsTable = pgTable("ai_recommendations", {
+  id: serial("id").primaryKey(),
+  session_id: text("session_id").notNull(),
+  station_uuid: text("station_uuid").notNull(),
+  score: real("score").notNull(),
+  reason: text("reason"),
+  generated_at: timestamp("generated_at").defaultNow().notNull(),
+  expires_at: timestamp("expires_at").notNull(),
+});
+
+export const insertAiRecommendationSchema = createInsertSchema(
+  aiRecommendationsTable,
+).omit({ id: true, generated_at: true });
+export type InsertAiRecommendation = z.infer<typeof insertAiRecommendationSchema>;
+export type AiRecommendation = typeof aiRecommendationsTable.$inferSelect;
